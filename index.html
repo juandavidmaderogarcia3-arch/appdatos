@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIPA 11 - Visualizador de Estructuras de Datos</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #050711;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    code, .font-mono {
+      font-family: 'Fira Code', monospace;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #00f2fe;
+    }
+    
+    /* PALETA CYBERPUNK FINTECH & GLASSMORPHISM */
+    .glass-panel {
+      background: rgba(13, 18, 36, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 242, 254, 0.15);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    }
+    .glass-panel-glow {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(243, 85, 218, 0.3);
+      box-shadow: 0 0 40px rgba(0, 242, 254, 0.12), inset 0 0 20px rgba(243, 85, 218, 0.08);
+    }
+    .node-pop {
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.3) translateY(20px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .pulse-glow {
+      animation: glowPulse 1.8s infinite alternate;
+    }
+    @keyframes glowPulse {
+      0% { box-shadow: 0 0 8px rgba(0, 242, 254, 0.5), inset 0 0 8px rgba(0, 242, 254, 0.3); }
+      100% { box-shadow: 0 0 35px rgba(243, 85, 218, 0.9), 0 0 60px rgba(0, 242, 254, 0.6); }
+    }
+    .scanline-grid {
+      background-size: 50px 50px;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(243, 85, 218, 0.12), transparent 70%),
+        radial-gradient(circle at 0% 100%, rgba(0, 242, 254, 0.1), transparent 60%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+    .bar-sort {
+      transition: height 0.3s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    }
+    
+    /* ANIMACIONES AVATARES */
+    .avatar-float {
+      animation: floatAvatar 3s ease-in-out infinite;
+    }
+    @keyframes floatAvatar {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(1.5deg); }
+    }
+    .avatar-blink {
+      animation: blinkEye 4s infinite;
+      transform-origin: center;
+    }
+    @keyframes blinkEye {
+      0%, 94%, 98%, 100% { transform: scaleY(1); }
+      96% { transform: scaleY(0.1); }
+    }
+    .page-enter {
+      animation: slideFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideFadeIn {
+      0% { opacity: 0; transform: translateY(20px) scale(0.99); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    .neon-gradient-text {
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 35%, #f355da 70%, #ff5858 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    @keyframes flashSweep {
+      0% { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateX(100%) skewX(-12deg); opacity: 0; }
+    }
+
+    /* ANIMACIÓN BORDES NEÓN GIRATORIOS CONTINUOS (SNAKE BORDER BEAM) */
+    .animated-border-card {
+      position: relative;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      padding: 1.5px;
+    }
+    .animated-border-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(
+        transparent 0deg,
+        transparent 280deg,
+        #00f2fe 320deg,
+        #f355da 360deg
+      );
+      animation: rotateBorder 4s linear infinite;
+      z-index: 0;
+    }
+    .animated-border-card::after {
+      content: '';
+      position: absolute;
+      inset: 1px;
+      background: #090d1e;
+      border-radius: calc(1.5rem - 1px);
+      z-index: 1;
+    }
+    .animated-border-card > * {
+      position: relative;
+      z-index: 2;
+    }
+    @keyframes rotateBorder {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-[#050711] text-slate-100 min-h-screen scanline-grid selection:bg-cyan-500 selection:text-black">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- SINTETIZADOR DE SONIDO WEB AUDIO API ---
+    const playSound = (type = 'click') => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const now = ctx.currentTime;
+
+        if (type === 'splash') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(120, now);
+          osc.frequency.exponentialRampToValueAtTime(700, now + 0.4);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.5);
+        } else if (type === 'push' || type === 'insert') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'pop' || type === 'delete') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(700, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.18);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } else if (type === 'error') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(110, now + 0.1);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        } else if (type === 'success') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(480, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        }
+      } catch (e) {}
+    };
+
+    // --- COMPONENTE DE ICONOS LUCIDE ---
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        }, 10);
+        return () => clearTimeout(timer);
+      }, [name]);
+      return <i data-lucide={name} class={className}></i>;
+    };
+
+    // --- HELPER DIRECCIÓN HEXADECIMAL RAM ---
+    const getHexAddr = (base = 0x7FFF00, offset = 0) => {
+      return '0x' + (base + offset * 8).toString(16).toUpperCase();
+    };
+
+    // --- PANTALLA INTRO SPLASH CIPA 11 (15s EXACTOS) ---
+    function SplashScreen({ onComplete, soundEnabled }) {
+      const [progress, setProgress] = useState(0);
+      const [statusText, setStatusText] = useState('Inicializando Núcleo CIPA 11...');
+      const [isLaunching, setIsLaunching] = useState(false);
+      
+      const [showText, setShowText] = useState(false);
+      const [typedText, setTypedText] = useState('');
+      const [triggerFlash, setTriggerFlash] = useState(false);
+
+      const fullText = "CIPA 11";
+
+      useEffect(() => {
+        const steps = [
+          { p: 10, msg: 'Estableciendo canal seguro de bus de datos RAM...' },
+          { p: 25, msg: 'Asignando bloques de memoria estática y dinámica...' },
+          { p: 35, msg: 'Compilando punteros y referencias hexadecimales...' },
+          { p: 50, msg: 'Cargando motor gráfico Canvas 2D de alta resolución...' },
+          { p: 65, msg: 'Compilando punteros de Árboles BST y Grafos no dirigidos...' },
+          { p: 78, msg: 'Inicializando sintetizador de audio Hi-Fi y analizador Big-O...' },
+          { p: 88, msg: 'Ejecutando pruebas de integridad LIFO / FIFO y BFS...' },
+          { p: 95, msg: 'Calibrando renderizado de animaciones y transiciones...' },
+          { p: 100, msg: '¡Suite CIPA 11 operacional! Desplegando entorno...' }
+        ];
+
+        let currentStep = 0;
+        const stepInterval = 15000 / steps.length;
+
+        const interval = setInterval(() => {
+          if (currentStep < steps.length) {
+            setProgress(steps[currentStep].p);
+            setStatusText(steps[currentStep].msg);
+            if (soundEnabled) playSound('click');
+            currentStep++;
+          } else {
+            clearInterval(interval);
+            if (soundEnabled) playSound('splash');
+            setIsLaunching(true);
+            setTimeout(() => {
+              onComplete();
+            }, 600);
+          }
+        }, stepInterval);
+
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        const timerTextShow = setTimeout(() => {
+          setShowText(true);
+          let charIndex = 0;
+          const typingInterval = setInterval(() => {
+            if (charIndex < fullText.length) {
+              setTypedText(fullText.substring(0, charIndex + 1));
+              if (soundEnabled) playSound('click');
+              charIndex++;
+            } else {
+              clearInterval(typingInterval);
+              setTimeout(() => {
+                setTriggerFlash(true);
+                if (soundEnabled) playSound('success');
+              }, 300);
+            }
+          }, 180);
+        }, 3000);
+
+        return () => clearTimeout(timerTextShow);
+      }, []);
+
+      return (
+        <div class={`fixed inset-0 z-50 bg-[#04060b] flex flex-col items-center justify-center p-6 transition-all duration-700 ${isLaunching ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          <div class="max-w-xl w-full text-center space-y-6 relative z-10 page-enter">
+            
+            {/* Ícono Centrado Neón */}
+            <div class="relative mx-auto w-24 h-24 flex items-center justify-center transition-all duration-700 transform hover:scale-110">
+              <div class="w-full h-full bg-gradient-to-tr from-cyan-400 via-fuchsia-500 to-indigo-500 rounded-2xl p-[2px] shadow-[0_0_40px_rgba(0,242,254,0.4)] animate-pulse">
+                <div class="w-full h-full bg-[#070a14] rounded-[14px] flex items-center justify-center relative border border-cyan-400/30">
+                  <Icon name="cpu" className="w-12 h-12 text-cyan-300 relative z-10" />
+                </div>
+              </div>
+            </div>
+
+            {/* Texto CIPA 11: Aparece a los 3s con Mecanografía y Flash de Resplandor */}
+            <div class="h-16 flex items-center justify-center">
+              {showText && (
+                <div class="relative inline-block overflow-hidden px-4 py-1">
+                  <h1 class="text-4xl md:text-5xl font-extrabold tracking-wider text-white font-mono">
+                    <span class="neon-gradient-text">{typedText}</span>
+                    {typedText.length < fullText.length && (
+                      <span class="inline-block w-2.5 h-8 bg-cyan-400 ml-1 animate-ping"></span>
+                    )}
+                  </h1>
+
+                  {triggerFlash && (
+                    <div 
+                      class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-90 -skew-x-12 pointer-events-none"
+                      style={{ animation: 'flashSweep 0.8s ease-in-out forwards' }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Barra de Carga Neón de 15 Segundos */}
+            <div class="w-full max-w-md mx-auto space-y-3 pt-2 font-mono">
+              <div class="w-full bg-[#080d1a] h-3 rounded-full overflow-hidden p-0.5 border border-cyan-500/20 shadow-inner">
+                <div 
+                  style={{ width: `${progress}%` }} 
+                  class="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-400 rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(0,242,254,0.8)]"
+                ></div>
+              </div>
+              
+              <div class="flex justify-between items-center text-[11px] text-slate-400 px-1">
+                <span class="truncate max-w-[320px] text-left">{statusText}</span>
+                <span class="text-cyan-300 font-bold">{progress}%</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // --- MODAL INTERACTIVO DE REGISTRO E INICIO DE SESIÓN ---
+    function UserWelcomeModal({ onConfirm, soundEnabled }) {
+      const [name, setName] = useState('');
+      const [role, setRole] = useState('Estudiante');
+      const [selectedAvatar, setSelectedAvatar] = useState('man');
+      const [errorMsg, setErrorMsg] = useState('');
+
+      const avatars = [
+        { 
+          id: 'man', 
+          name: 'Hombre', 
+          renderSvg: () => (
+            <svg viewBox="0 0 100 100" class="w-20 h-20 avatar-float drop-shadow-[0_0_15px_rgba(0,242,254,0.8)]">
+              <path d="M 25 38 C 25 15, 75 15, 75 38 C 75 22, 60 18, 50 20 C 35 18, 25 25, 25 38 Z" fill="#00f2fe" />
+              <circle cx="50" cy="42" r="20" fill="#fce7f3" stroke="#00f2fe" stroke-width="2" />
+              <circle cx="43" cy="40" r="3" fill="#0f172a" class="avatar-blink" />
+              <circle cx="57" cy="40" r="3" fill="#0f172a" class="avatar-blink" />
+              <circle cx="44" cy="39" r="1" fill="#ffffff" />
+              <circle cx="58" cy="39" r="1" fill="#ffffff" />
+              <path d="M 43 49 Q 50 54 57 49" stroke="#0f172a" stroke-width="2" stroke-linecap="round" fill="none" />
+              <rect x="44" y="60" width="12" height="8" fill="#fce7f3" />
+              <path d="M 22 88 C 22 66, 78 66, 78 88 Z" fill="url(#gradMan)" stroke="#00f2fe" stroke-width="2" />
+              <path d="M 38 68 L 50 82 L 62 68" fill="none" stroke="#00f2fe" stroke-width="2.5" />
+              <defs>
+                <linearGradient id="gradMan" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#091533" />
+                  <stop offset="100%" stop-color="#0284c7" />
+                </linearGradient>
+              </defs>
+            </svg>
+          ) 
+        },
+        { 
+          id: 'woman', 
+          name: 'Mujer', 
+          renderSvg: () => (
+            <svg viewBox="0 0 100 100" class="w-20 h-20 avatar-float drop-shadow-[0_0_15px_rgba(243,85,218,0.8)]">
+              <path d="M 20 40 C 20 12, 80 12, 80 40 C 82 62, 76 75, 74 80 C 70 65, 75 42, 70 30 C 60 18, 40 18, 30 30 C 25 42, 30 65, 26 80 C 24 75, 18 62, 20 40 Z" fill="#f355da" />
+              <circle cx="50" cy="42" r="19" fill="#fff1f2" stroke="#f355da" stroke-width="2" />
+              <circle cx="43" cy="41" r="3" fill="#0f172a" class="avatar-blink" />
+              <circle cx="57" cy="41" r="3" fill="#0f172a" class="avatar-blink" />
+              <circle cx="44" cy="40" r="1" fill="#ffffff" />
+              <circle cx="58" cy="40" r="1" fill="#ffffff" />
+              <path d="M 39 37 L 42 39 M 61 37 L 58 39" stroke="#f355da" stroke-width="1.5" stroke-linecap="round" />
+              <path d="M 44 49 Q 50 55 56 49" stroke="#e11d48" stroke-width="2" stroke-linecap="round" fill="none" />
+              <rect x="45" y="59" width="10" height="8" fill="#fff1f2" />
+              <path d="M 24 88 C 24 65, 76 65, 76 88 Z" fill="url(#gradWoman)" stroke="#f355da" stroke-width="2" />
+              <circle cx="50" cy="74" r="4" fill="#00f2fe" class="animate-pulse" />
+              <defs>
+                <linearGradient id="gradWoman" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#2e1065" />
+                  <stop offset="100%" stop-color="#c026d3" />
+                </linearGradient>
+              </defs>
+            </svg>
+          ) 
+        }
+      ];
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!name.trim()) {
+          setErrorMsg('⚠️ Por favor ingresa tu nombre para continuar.');
+          if (soundEnabled) playSound('error');
+          return;
+        }
+        if (soundEnabled) playSound('success');
+        onConfirm({ name: name.trim(), role, avatar: selectedAvatar });
+      };
+
+      return (
+        <div class="fixed inset-0 z-50 bg-[#04060f]/90 backdrop-blur-2xl flex items-center justify-center p-4 page-enter">
+          <div class="max-w-lg w-full glass-panel-glow p-8 rounded-3xl border border-cyan-500/30 shadow-2xl shadow-cyan-500/20 space-y-6 relative overflow-hidden">
+            <div class="absolute -right-12 -top-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl"></div>
+            
+            <div class="text-center space-y-2 relative z-10">
+              <div class="w-16 h-16 mx-auto bg-gradient-to-tr from-cyan-400 via-fuchsia-500 to-indigo-500 rounded-2xl p-0.5 shadow-lg shadow-cyan-500/30 flex items-center justify-center mb-3">
+                <div class="w-full h-full bg-[#080d1e] rounded-[14px] flex items-center justify-center">
+                  <Icon name="sparkles" className="w-8 h-8 text-cyan-300 animate-pulse" />
+                </div>
+              </div>
+              <h2 class="text-2xl font-extrabold text-white">¡Bienvenido a <span class="neon-gradient-text">CIPA 11</span>!</h2>
+              <p class="text-xs text-slate-400 font-mono">Personaliza tu perfil de sesión para ingresar al simulador</p>
+            </div>
+
+            <form onSubmit={handleSubmit} class="space-y-5 relative z-10 font-mono text-xs">
+              <div>
+                <label class="block text-slate-300 mb-1.5 font-semibold">¿Cómo te llamas?</label>
+                <input 
+                  type="text" 
+                  value={name} 
+                  onChange={(e) => { setName(e.target.value); setErrorMsg(''); }} 
+                  placeholder="Ingresa tu nombre..." 
+                  class="w-full bg-[#070b18] border border-cyan-500/30 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/30 shadow-inner"
+                />
+              </div>
+
+              <div>
+                <label class="block text-slate-300 mb-1.5 font-semibold">Rol en la sesión:</label>
+                <div class="grid grid-cols-2 gap-3">
+                  {['Estudiante', 'Docente'].map((r) => (
+                    <button
+                      type="button"
+                      key={r}
+                      onClick={() => { setRole(r); if(soundEnabled) playSound('click'); }}
+                      class={`py-2.5 rounded-xl border text-center transition font-bold ${role === r ? 'bg-cyan-500 text-black border-cyan-300 shadow-md shadow-cyan-500/30' : 'bg-[#070b18] border-slate-800 text-slate-400 hover:text-white'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-slate-300 mb-2 font-semibold">Selecciona tu avatar:</label>
+                <div class="grid grid-cols-2 gap-4">
+                  {avatars.map((av) => {
+                    const isSelected = selectedAvatar === av.id;
+                    return (
+                      <button
+                        type="button"
+                        key={av.id}
+                        onClick={() => { setSelectedAvatar(av.id); if(soundEnabled) playSound('click'); }}
+                        class={`p-4 rounded-2xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
+                          isSelected 
+                            ? 'bg-gradient-to-b from-cyan-950/80 to-fuchsia-950/80 border-cyan-400 shadow-xl shadow-cyan-500/40 scale-105 ring-2 ring-cyan-400/50' 
+                            : 'bg-[#070b18] border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        {isSelected && (
+                          <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-fuchsia-500/10 to-transparent pointer-events-none"></div>
+                        )}
+                        <div class="relative z-10 py-1">
+                          {av.renderSvg()}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div class="p-2.5 bg-rose-950/70 border border-rose-500/40 rounded-xl text-rose-300 text-center text-[11px] font-sans">
+                  {errorMsg}
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                class="w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-500 hover:opacity-95 text-black font-extrabold py-3.5 rounded-xl transition-all duration-300 text-sm shadow-xl shadow-cyan-500/30 flex items-center justify-center gap-2 mt-2"
+              >
+                <span>Ingresar al Dashboard</span>
+                <Icon name="arrow-right" className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- APLICACIÓN PRINCIPAL ---
+    function App() {
+      const [showSplash, setShowSplash] = useState(true);
+      const [userProfile, setUserProfile] = useState(null);
+      const [activeStructure, setActiveStructure] = useState(null);
+      const [toast, setToast] = useState(null);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [animSpeed, setAnimSpeed] = useState(1);
+
+      const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        if (soundEnabled) {
+          if (type === 'error') playSound('error');
+          else if (type === 'warning') playSound('click');
+          else playSound('success');
+        }
+        setTimeout(() => setToast(null), 4000);
+      };
+
+      const triggerCelebration = () => {
+        if (window.confetti) {
+          window.confetti({
+            particleCount: 90,
+            spread: 80,
+            origin: { y: 0.65 }
+          });
+        }
+      };
+
+      const structuresList = [
+        { id: 'arreglo', title: '1. Arreglo 1D y SIMD Sort', desc: 'Memoria contigua en Hexadecimal con gráficos de barras brillantes y ordenamiento interactivo.', icon: 'bar-chart-3', badge: 'Memoria Contigua', O: 'O(1) Acceso', color: 'from-cyan-500 to-blue-600', shadow: 'shadow-cyan-500/30' },
+        { id: 'matriz', title: '2. Matriz Bidimensional (2D)', desc: 'Rejilla visual interactiva con mapeo por Fila Mayor y resaltado neón por coordenadas.', icon: 'grid', badge: 'Bidimensional', O: 'O(1) Acceso', color: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/30' },
+        { id: 'lista', title: '3. Lista Enlazada Dinámica', desc: 'Nodos encadenados con referencias de memoria Heap y reconexión dinámica animada.', icon: 'git-commit', badge: 'Punteros Dinámicos', O: 'O(N) Búsqueda', color: 'from-indigo-500 to-fuchsia-600', shadow: 'shadow-indigo-500/30' },
+        { id: 'pila', title: '4. Pila Animada (Stack)', desc: 'Estructura vertical LIFO con efectos de caída neón, inspección de la cima y detección de overflow.', icon: 'layers', badge: 'LIFO (Stack)', O: 'O(1) Push/Pop', color: 'from-fuchsia-500 to-pink-600', shadow: 'shadow-fuchsia-500/30' },
+        { id: 'cola', title: '5. Cola Animada (Queue)', desc: 'Cinta horizontal FIFO con resplandor en extremos de entrada/salida y flujo constante.', icon: 'arrow-right-left', badge: 'FIFO (Queue)', O: 'O(1) Push/Pop', color: 'from-pink-500 to-rose-600', shadow: 'shadow-pink-500/30' },
+        { id: 'arbol', title: '6. Árbol Binario (BST Canvas)', desc: 'Visualización jerárquica en Canvas 2D con animaciones de trazado de ramas en resplandor cian.', icon: 'network', badge: 'No Lineal (BST)', O: 'O(log N) Buscar', color: 'from-rose-500 to-amber-500', shadow: 'shadow-rose-500/30' },
+        { id: 'grafo', title: '7. Grafo Interactivo (Canvas)', desc: 'Red de vértices con propagación de ondas BFS iluminadas en colores verde neón y cian.', icon: 'share-2', badge: 'Grafo (No Dirigido)', O: 'O(V + E) BFS', color: 'from-emerald-500 to-cyan-500', shadow: 'shadow-emerald-500/30' },
+      ];
+
+      return (
+        <div class="min-h-screen flex flex-col bg-[#060813] text-slate-100">
+          {/* PASO 1: SPLASH SCREEN (15 SEGUNDOS) */}
+          {showSplash && (
+            <SplashScreen 
+              onComplete={() => setShowSplash(false)} 
+              soundEnabled={soundEnabled} 
+            />
+          )}
+
+          {/* PASO 2: MODAL DE REGISTRO / BIENVENIDA */}
+          {!showSplash && !userProfile && (
+            <UserWelcomeModal 
+              onConfirm={(profile) => {
+                setUserProfile(profile);
+                if (window.confetti) window.confetti({ particleCount: 50, spread: 60 });
+              }} 
+              soundEnabled={soundEnabled} 
+            />
+          )}
+
+          {/* PASO 3: DASHBOARD PRINCIPAL */}
+          {!showSplash && userProfile && (
+            <div class="page-enter flex-1 flex flex-col">
+              <header class="sticky top-0 z-40 border-b border-cyan-500/20 bg-[#070a16]/90 backdrop-blur-xl shadow-2xl">
+                <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                  <div class="flex items-center gap-3 cursor-pointer group" onClick={() => { setActiveStructure(null); playSound('click'); }}>
+                    <div class="p-2.5 bg-gradient-to-tr from-cyan-400 via-blue-600 to-fuchsia-500 rounded-2xl shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition">
+                      <Icon name="cpu" className="w-6 h-6 text-black font-bold" />
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-lg md:text-xl neon-gradient-text">
+                          CIPA 11 • Visualizador TCC
+                        </h1>
+                        <span class="px-2 py-0.5 bg-cyan-500/10 border border-cyan-400/40 text-cyan-300 text-[10px] font-mono rounded font-bold shadow-inner">
+                          PRO DASHBOARD
+                        </span>
+                      </div>
+                      <p class="text-xs text-slate-400 font-mono">Estructuras de Datos • Universidad de Cartagena</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 bg-[#0a0f20] border border-fuchsia-500/30 px-3 py-1.5 rounded-xl text-xs font-mono">
+                      <Icon name="user" className="w-3.5 h-3.5 text-fuchsia-400" />
+                      <span class="text-white font-bold">{userProfile.name}</span>
+                      <span class="px-1.5 py-0.5 bg-fuchsia-950 text-fuchsia-300 text-[9px] rounded font-bold uppercase">{userProfile.role}</span>
+                    </div>
+
+                    <div class="hidden md:flex items-center gap-1.5 bg-[#0a0f20] border border-cyan-500/20 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-400">
+                      <Icon name="zap" className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Velocidad:</span>
+                      {[0.5, 1, 2].map(s => (
+                        <button 
+                          key={s} 
+                          onClick={() => setAnimSpeed(s)} 
+                          class={`px-2 py-0.5 rounded font-bold ${animSpeed === s ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/40' : 'hover:text-white'}`}
+                        >
+                          {s}x
+                        </button>
+                      ))}
+                    </div>
+
+                    <button 
+                      onClick={() => { setShowSplash(true); setUserProfile(null); }}
+                      class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/20 bg-[#0a0f20] hover:bg-[#121933] text-slate-300 hover:text-white text-xs font-mono font-semibold transition"
+                    >
+                      <Icon name="rotate-ccw" className="w-3.5 h-3.5 text-cyan-400" />
+                      Replay Splash
+                    </button>
+
+                    <button 
+                      onClick={() => setSoundEnabled(!soundEnabled)}
+                      class={`p-2 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 ${soundEnabled ? 'bg-fuchsia-950/60 border-fuchsia-500/50 text-fuchsia-300 shadow-md shadow-fuchsia-500/20' : 'bg-[#0a0f20] border-slate-800 text-slate-500'}`}
+                    >
+                      <Icon name={soundEnabled ? "volume-2" : "volume-x"} className="w-4 h-4" />
+                      <span class="hidden sm:inline">{soundEnabled ? 'Audio ON' : 'Mudo'}</span>
+                    </button>
+
+                    {activeStructure && (
+                      <button 
+                        onClick={() => { setActiveStructure(null); playSound('click'); }}
+                        class="flex items-center gap-2 bg-gradient-to-r from-cyan-500 via-blue-600 to-fuchsia-600 hover:opacity-90 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-lg shadow-cyan-500/30 border border-cyan-400/30"
+                      >
+                        <Icon name="arrow-left" className="w-4 h-4" />
+                        Menú Principal
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </header>
+
+              {toast && (
+                <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border text-sm font-semibold animate-bounce backdrop-blur-xl bg-[#090d1a]/95 text-slate-100 border-cyan-400/50 shadow-cyan-500/30">
+                  <Icon name={toast.type === 'error' ? 'alert-triangle' : toast.type === 'warning' ? 'alert-circle' : 'check-circle-2'} className={`w-5 h-5 ${toast.type === 'error' ? 'text-rose-400' : toast.type === 'warning' ? 'text-amber-400' : 'text-emerald-400'}`} />
+                  <span>{toast.message}</span>
+                </div>
+              )}
+
+              <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+                {!activeStructure ? (
+                  <div class="space-y-8 py-4 page-enter">
+                    <div class="text-center max-w-3xl mx-auto space-y-4">
+                      <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold rounded-full uppercase tracking-wider shadow-lg">
+                        <Icon name="sparkles" className="w-4 h-4 text-fuchsia-400 animate-pulse" />
+                        SESIÓN ACTIVA • {userProfile.name.toUpperCase()} ({userProfile.role.toUpperCase()})
+                      </span>
+                      <h2 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight">
+                        Explorador de <span class="neon-gradient-text">Estructuras de Datos</span>
+                      </h2>
+                      <p class="text-slate-400 text-sm md:text-base leading-relaxed">
+                        Selecciona un módulo para visualizar en tiempo real algoritmos con estética de dashboard analítico y direcciones físicas de memoria RAM.
+                      </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {structuresList.map((st) => (
+                        <div 
+                          key={st.id}
+                          onClick={() => { setActiveStructure(st.id); playSound('click'); }}
+                          class="animated-border-card group cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-500/30"
+                        >
+                          <div class="h-full p-6 flex flex-col justify-between relative overflow-hidden bg-[#090d1e] rounded-[calc(1.5rem-1px)]">
+                            <div class="absolute -right-10 -top-10 w-36 h-36 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-fuchsia-500/20 transition"></div>
+                            <div class="space-y-4 relative z-10">
+                              <div class="flex items-center justify-between">
+                                <div class={`p-3.5 bg-[#050814] group-hover:bg-gradient-to-tr ${st.color} text-cyan-400 group-hover:text-black rounded-2xl transition duration-300 shadow-md border border-cyan-500/20 ${st.shadow}`}>
+                                  <Icon name={st.icon} className="w-7 h-7" />
+                                </div>
+                                <div class="flex flex-col items-end">
+                                  <span class="text-[10px] px-2.5 py-0.5 bg-[#050814] text-cyan-300 rounded-full font-mono font-bold border border-cyan-500/30">
+                                    {st.badge}
+                                  </span>
+                                  <span class="text-[10px] font-mono text-fuchsia-400 mt-1 font-bold">{st.O}</span>
+                                </div>
+                              </div>
+                              <h3 class="text-xl font-bold text-white group-hover:text-cyan-300 transition">{st.title}</h3>
+                              <p class="text-xs text-slate-400 leading-relaxed">{st.desc}</p>
+                            </div>
+                            
+                            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono font-bold text-cyan-400 group-hover:text-fuchsia-300 relative z-10">
+                              <span>Abrir Módulo</span>
+                              <Icon name="arrow-right" className="w-4 h-4 transition transform group-hover:translate-x-2" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div class="glass-panel-glow rounded-3xl p-4 md:p-8 shadow-2xl page-enter">
+                    {activeStructure === 'arreglo' && <ArregloModulo showToast={showToast} triggerCelebration={triggerCelebration} sound={soundEnabled} animSpeed={animSpeed} />}
+                    {activeStructure === 'matriz' && <MatrizModulo showToast={showToast} sound={soundEnabled} />}
+                    {activeStructure === 'lista' && <ListaModulo showToast={showToast} sound={soundEnabled} />}
+                    {activeStructure === 'pila' && <PilaModulo showToast={showToast} sound={soundEnabled} />}
+                    {activeStructure === 'cola' && <ColaModulo showToast={showToast} sound={soundEnabled} />}
+                    {activeStructure === 'arbol' && <ArbolModulo showToast={showToast} sound={soundEnabled} animSpeed={animSpeed} />}
+                    {activeStructure === 'grafo' && <GrafoModulo showToast={showToast} triggerCelebration={triggerCelebration} sound={soundEnabled} animSpeed={animSpeed} />}
+                  </div>
+                )}
+              </main>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- COMPONENTES AUXILIARES Y MÓDULOS DE ESTRUCTURAS ---
+    function ComplexityBadge({ access, search, insert, deleteOp, codeSnippet }) {
+      const [showCode, setShowCode] = useState(false);
+      return (
+        <div class="bg-[#080c1b]/90 border border-cyan-500/20 p-4 rounded-2xl space-y-3 font-mono text-xs shadow-xl">
+          <div class="flex flex-wrap gap-4 items-center justify-between">
+            <span class="text-slate-300 font-sans font-bold flex items-center gap-1.5">
+              <Icon name="cpu" className="w-4 h-4 text-cyan-400" /> Complejidad Temporal (Big-O):
+            </span>
+            <div class="flex flex-wrap gap-3">
+              {access && <span class="bg-[#0d1326] border border-cyan-500/30 px-2.5 py-1 rounded-lg text-cyan-300">Acceso: <strong class="text-white">{access}</strong></span>}
+              {search && <span class="bg-[#0d1326] border border-blue-500/30 px-2.5 py-1 rounded-lg text-blue-300">Búsqueda: <strong class="text-white">{search}</strong></span>}
+              {insert && <span class="bg-[#0d1326] border border-emerald-500/30 px-2.5 py-1 rounded-lg text-emerald-300">Inserción: <strong class="text-white">{insert}</strong></span>}
+              {deleteOp && <span class="bg-[#0d1326] border border-rose-500/30 px-2.5 py-1 rounded-lg text-rose-300">Eliminación: <strong class="text-white">{deleteOp}</strong></span>}
+            </div>
+            {codeSnippet && (
+              <button onClick={() => setShowCode(!showCode)} class="text-slate-300 hover:text-white flex items-center gap-1 bg-[#0d1326] px-2.5 py-1 rounded-lg border border-fuchsia-500/30 hover:border-fuchsia-400 transition">
+                <Icon name="code" className="w-3.5 h-3.5 text-fuchsia-400" />
+                {showCode ? 'Ocultar Código' : 'Ver Algoritmo Python'}
+              </button>
+            )}
+          </div>
+          {showCode && codeSnippet && (
+            <div class="bg-[#060914] p-4 rounded-xl border border-cyan-500/30 text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
+              <pre>{codeSnippet}</pre>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ArregloModulo({ showToast, triggerCelebration, sound, animSpeed }) {
+      const [tamano, setTamano] = useState('');
+      const [arreglo, setArreglo] = useState([45, 12, 89, 34, 67, 23, 90, 11]);
+      const [isCreated, setIsCreated] = useState(true);
+      const [searchIndex, setSearchIndex] = useState('');
+      const [modIndex, setModIndex] = useState('');
+      const [modValue, setModValue] = useState('');
+      const [highlightedIndex, setHighlightedIndex] = useState(null);
+      const [isSorting, setIsSorting] = useState(false);
+      const [comparingIndices, setComparingIndices] = useState([]);
+      const [algorithm, setAlgorithm] = useState('bubble');
+      const delay = (ms) => new Promise(r => setTimeout(r, ms / animSpeed));
+
+      const crearArreglo = () => {
+        const val = parseInt(tamano);
+        if (isNaN(val) || val <= 0 || val > 16) {
+          showToast('❌ Ingrese un tamaño válido entre 1 y 16.', 'error');
+          return;
+        }
+        const nuevoArr = Array.from({ length: val }, () => Math.floor(Math.random() * 85) + 10);
+        setArreglo(nuevoArr);
+        setIsCreated(true);
+        if (sound) playSound('insert');
+        showToast(`✅ Arreglo de ${val} elementos asignado en RAM.`);
+      };
+
+      const consultarIndice = () => {
+        const idx = parseInt(searchIndex);
+        if (isNaN(idx) || idx < 0 || idx >= arreglo.length) {
+          showToast(`❌ Error: Índice fuera de rango (0 a ${arreglo.length - 1}).`, 'error');
+          return;
+        }
+        setHighlightedIndex(idx);
+        if (sound) playSound('click');
+        showToast(`👉 Memoria [${getHexAddr(0x7FFF10, idx)}] = ${arreglo[idx]}`);
+      };
+
+      const modificarIndice = () => {
+        const idx = parseInt(modIndex);
+        const val = parseInt(modValue);
+        if (isNaN(idx) || idx < 0 || idx >= arreglo.length) {
+          showToast(`❌ Error: Índice fuera de rango.`, 'error');
+          return;
+        }
+        if (isNaN(val)) {
+          showToast('❌ Valor inválido.', 'error');
+          return;
+        }
+        const copia = [...arreglo];
+        copia[idx] = val;
+        setArreglo(copia);
+        setHighlightedIndex(idx);
+        if (sound) playSound('success');
+        showToast(`✅ Celda [${idx}] modificada a ${val}.`);
+      };
+
+      const ejecutarOrdenamiento = async () => {
+        setIsSorting(true);
+        let arr = [...arreglo];
+        let n = arr.length;
+        if (algorithm === 'bubble') {
+          for (let i = 0; i < n - 1; i++) {
+            for (let j = 0; j < n - i - 1; j++) {
+              setComparingIndices([j, j + 1]);
+              if (sound) playSound('click');
+              await delay(250);
+              if (arr[j] > arr[j + 1]) {
+                let temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+                setArreglo([...arr]);
+                if (sound) playSound('push');
+                await delay(250);
+              }
+            }
+          }
+        } else if (algorithm === 'selection') {
+          for (let i = 0; i < n - 1; i++) {
+            let minIdx = i;
+            for (let j = i + 1; j < n; j++) {
+              setComparingIndices([minIdx, j]);
+              if (sound) playSound('click');
+              await delay(250);
+              if (arr[j] < arr[minIdx]) minIdx = j;
+            }
+            if (minIdx !== i) {
+              let temp = arr[i];
+              arr[i] = arr[minIdx];
+              arr[minIdx] = temp;
+              setArreglo([...arr]);
+              if (sound) playSound('push');
+              await delay(250);
+            }
+          }
+        }
+        setComparingIndices([]);
+        setIsSorting(false);
+        triggerCelebration();
+        showToast(`🎉 ¡Arreglo ordenado mediante ${algorithm.toUpperCase()}!`);
+      };
+
+      return (
+        <div class="space-y-6">
+          <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                <Icon name="bar-chart-3" className="text-cyan-400" />
+                1. Arreglo Unidimensional & SIMD Ordenamiento
+              </h2>
+              <p class="text-xs text-slate-400">Direccionamiento contiguo en RAM e inspección paso a paso.</p>
+            </div>
+            <button onClick={() => setIsCreated(!isCreated)} class="text-xs bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-cyan-300 font-mono">
+              {isCreated ? 'Reconfigurar Tamaño' : 'Ver Arreglo'}
+            </button>
+          </div>
+          <ComplexityBadge 
+            access="O(1)" search="O(N)" insert="O(N)" deleteOp="O(N)"
+            codeSnippet={`# Algoritmo de Ordenamiento Bubble Sort en Arreglo 1D
+def bubble_sort(arreglo):
+    n = len(arreglo)
+    for i in range(n - 1):
+        for j in range(0, n - i - 1):
+            if arreglo[j] > arreglo[j + 1]:
+                arreglo[j], arreglo[j + 1] = arreglo[j + 1], arreglo[j]`}
+          />
+          {!isCreated ? (
+            <div class="max-w-md bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+              <label class="block text-xs font-semibold text-slate-300 font-mono">Cantidad de elementos (1 a 16):</label>
+              <input type="number" value={tamano} onChange={e => setTamano(e.target.value)} placeholder="Ej. 8" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-mono focus:outline-none focus:border-cyan-500" />
+              <button onClick={crearArreglo} class="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-cyan-600/30">
+                Inicializar Arreglo en RAM
+              </button>
+            </div>
+          ) : (
+            <div class="space-y-6">
+              <div class="bg-slate-955 p-6 rounded-3xl border border-slate-800 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono text-slate-400">Algoritmo:</span>
+                    <select value={algorithm} onChange={e=>setAlgorithm(e.target.value)} class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-cyan-300 font-mono">
+                      <option value="bubble">Bubble Sort O(N²)</option>
+                      <option value="selection">Selection Sort O(N²)</option>
+                    </select>
+                  </div>
+                  <button 
+                    disabled={isSorting}
+                    onClick={ejecutarOrdenamiento} 
+                    class="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-cyan-600/30 disabled:opacity-50"
+                  >
+                    <Icon name="play" className="w-4 h-4" />
+                    {isSorting ? 'Ejecutando...' : 'Simular Algoritmo'}
+                  </button>
+                </div>
+                <div class="h-60 flex items-end justify-center gap-2.5 pt-6 pb-2 px-4 border-b border-slate-800/80 overflow-x-auto custom-scrollbar">
+                  {arreglo.map((val, idx) => {
+                    const isComparing = comparingIndices.includes(idx);
+                    const isSelected = highlightedIndex === idx;
+                    return (
+                      <div key={idx} class="flex flex-col items-center gap-2 flex-1 max-w-[55px]">
+                        <span class="text-xs font-bold text-white font-mono">{val}</span>
+                        <div 
+                          style={{ height: `${val * 1.9}px` }}
+                          class={`w-full rounded-t-xl bar-sort flex items-center justify-center transition-all ${
+                            isComparing ? 'bg-amber-400 scale-105 shadow-xl shadow-amber-400/50' : 
+                            isSelected ? 'bg-emerald-400 scale-105 shadow-xl shadow-emerald-400/50' : 
+                            'bg-gradient-to-t from-indigo-700 to-cyan-500 hover:from-indigo-600 hover:to-cyan-400'
+                          }`}
+                        ></div>
+                        <span class="text-[9px] font-mono text-cyan-400 bg-slate-900 px-1 py-0.5 rounded border border-slate-800 truncate w-full text-center" title={getHexAddr(0x7FFF10, idx)}>
+                          {getHexAddr(0x7FFF10, idx).substring(6)}
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-500">[{idx}]</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                  <h4 class="text-xs font-mono font-semibold text-cyan-300">1. Consultar por Índice O(1)</h4>
+                  <div class="flex gap-2">
+                    <input type="number" placeholder="Índice" value={searchIndex} onChange={e=>setSearchIndex(e.target.value)} class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono" />
+                    <button onClick={consultarIndice} class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold font-mono">Consultar</button>
+                  </div>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                  <h4 class="text-xs font-mono font-semibold text-cyan-300">2. Modificar Elemento</h4>
+                  <div class="flex gap-2">
+                    <input type="number" placeholder="Índice" value={modIndex} onChange={e=>setModIndex(e.target.value)} class="w-1/3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono" />
+                    <input type="number" placeholder="Nuevo valor" value={modValue} onChange={e=>setModValue(e.target.value)} class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono" />
+                    <button onClick={modificarIndice} class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold font-mono">Guardar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function MatrizModulo({ showToast, sound }) {
+      const [filas, setFilas] = useState('3');
+      const [cols, setCols] = useState('3');
+      const [matriz, setMatriz] = useState([
+        [14, 88, 32],
+        [65, 42, 91],
+        [27, 53, 76]
+      ]);
+      const [isCreated, setIsCreated] = useState(true);
+      const [selFila, setSelFila] = useState('');
+      const [selCol, setSelCol] = useState('');
+      const [modVal, setModVal] = useState('');
+      const [highlightCell, setHighlightCell] = useState(null);
+
+      const crearMatriz = () => {
+        const f = parseInt(filas);
+        const c = parseInt(cols);
+        if (isNaN(f) || f <= 0 || f > 5 || isNaN(c) || c <= 0 || c > 5) {
+          showToast('❌ Filas y columnas entre 1 y 5.', 'error');
+          return;
+        }
+        const m = Array.from({ length: f }, () =>
+          Array.from({ length: c }, () => Math.floor(Math.random() * 89) + 10)
+        );
+        setMatriz(m);
+        setIsCreated(true);
+        if (sound) playSound('insert');
+        showToast(`✅ Matriz ${f}x${c} mapeada en RAM (${f*c} posiciones).`);
+      };
+
+      const consultarCelda = () => {
+        const f = parseInt(selFila);
+        const c = parseInt(selCol);
+        if (isNaN(f) || isNaN(c) || f < 0 || f >= matriz.length || c < 0 || c >= matriz[0].length) {
+          showToast('❌ Coordenadas fuera de rango.', 'error');
+          return;
+        }
+        setHighlightCell({ f, c });
+        if (sound) playSound('click');
+        const linearIdx = f * matriz[0].length + c;
+        showToast(`👉 Matriz[${f}][${c}] = ${matriz[f][c]} (Dirección Offset RAM: +${linearIdx * 4}B)`);
+      };
+
+      const modificarCelda = () => {
+        const f = parseInt(selFila);
+        const c = parseInt(selCol);
+        const val = parseInt(modVal);
+        if (isNaN(f) || isNaN(c) || f < 0 || f >= matriz.length || c < 0 || c >= matriz[0].length) {
+          showToast('❌ Coordenada inválida.', 'error');
+          return;
+        }
+        if (isNaN(val)) {
+          showToast('❌ Valor no numérico.', 'error');
+          return;
+        }
+        const nueva = matriz.map(r => [...r]);
+        nueva[f][c] = val;
+        setMatriz(nueva);
+        setHighlightCell({ f, c });
+        if (sound) playSound('success');
+        showToast(`✅ Celda [${f}][${c}] actualizada a ${val}.`);
+      };
+
+      return (
+        <div class="space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                <Icon name="grid" className="text-cyan-400" />
+                2. Matriz Bidimensional (2D) & Row-Major Order
+              </h2>
+              <p class="text-xs text-slate-400">Mapeo de memoria bidimensional contigua [Fila × Columna].</p>
+            </div>
+            <button onClick={() => setIsCreated(!isCreated)} class="text-xs bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-cyan-300 font-mono">
+              {isCreated ? 'Reconfigurar Matriz' : 'Ver Matriz'}
+            </button>
+          </div>
+          <ComplexityBadge 
+            access="O(1)" search="O(F × C)" insert="O(1)" deleteOp="N/A"
+            codeSnippet={`# Acceso directo en Matriz 2D mediante offset de fila mayor
+def consultar_celda(matriz, fila, col, num_cols):
+    return matriz[fila][col]`}
+          />
+          {!isCreated ? (
+            <div class="max-w-md bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 mb-1 font-mono">Filas (1-5):</label>
+                  <input type="number" value={filas} onChange={e=>setFilas(e.target.value)} class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 mb-1 font-mono">Columnas (1-5):</label>
+                  <input type="number" value={cols} onChange={e=>setCols(e.target.value)} class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono" />
+                </div>
+              </div>
+              <button onClick={crearMatriz} class="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 text-white font-bold py-2.5 rounded-xl">
+                Generar Matriz
+              </button>
+            </div>
+          ) : (
+            <div class="space-y-6">
+              <div class="bg-slate-955 p-6 rounded-3xl border border-slate-800 overflow-x-auto">
+                <table class="border-separate border-spacing-3 mx-auto">
+                  <thead>
+                    <tr>
+                      <th class="p-2 text-xs font-mono text-slate-500">f\c</th>
+                      {matriz[0].map((_, c) => (
+                        <th key={c} class="p-2 text-xs font-mono text-cyan-400 font-bold">Col {c}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matriz.map((row, f) => (
+                      <tr key={f}>
+                        <td class="p-2 text-xs font-mono text-cyan-400 font-bold">Fila {f}</td>
+                        {row.map((cell, c) => {
+                          const isSel = highlightCell?.f === f && highlightCell?.c === c;
+                          const offset = f * matriz[0].length + c;
+                          return (
+                            <td key={c}>
+                              <div class={`w-20 h-20 rounded-2xl flex flex-col items-center justify-center font-bold border transition-all duration-300 ${
+                                isSel ? 'bg-indigo-600 border-cyan-300 text-white scale-110 shadow-2xl shadow-indigo-500/50 pulse-glow' : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700'
+                              }`}>
+                                <span class="text-lg font-mono">{cell}</span>
+                                <span class="text-[9px] font-mono text-slate-500">[{f}][{c}]</span>
+                                <span class="text-[8px] font-mono text-cyan-400/80">{getHexAddr(0x7FFF30, offset)}</span>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-4 items-center justify-between font-mono">
+                <div class="flex items-center gap-2">
+                  <input type="number" placeholder="Fila" value={selFila} onChange={e=>setSelFila(e.target.value)} class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+                  <input type="number" placeholder="Col" value={selCol} onChange={e=>setSelCol(e.target.value)} class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+                  <button onClick={consultarCelda} class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Consultar</button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="number" placeholder="Nuevo valor" value={modVal} onChange={e=>setModVal(e.target.value)} class="w-28 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+                  <button onClick={modificarCelda} class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold">Modificar Celda</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ListaModulo({ showToast, sound }) {
+      const [lista, setLista] = useState([
+        { val: 12, addr: '0x8FA0', next: '0x8FA8' },
+        { val: 38, addr: '0x8FA8', next: '0x8FC0' },
+        { val: 55, addr: '0x8FC0', next: '0x8FD4' },
+        { val: 91, addr: '0x8FD4', next: 'NULL' }
+      ]);
+      const [nuevoValor, setNuevoValor] = useState('');
+      const [buscarVal, setBuscarVal] = useState('');
+      const [highlightIdx, setHighlightIdx] = useState(null);
+
+      const insertarNodo = () => {
+        const val = parseInt(nuevoValor);
+        if (isNaN(val)) {
+          showToast('❌ Ingrese un entero válido.', 'error');
+          return;
+        }
+        const newAddr = '0x' + (Math.floor(Math.random() * 0xFFF) + 0x8000).toString(16).toUpperCase();
+        let copia = [...lista];
+        if (copia.length > 0) {
+          copia[copia.length - 1].next = newAddr;
+        }
+        copia.push({ val, addr: newAddr, next: 'NULL' });
+        setLista(copia);
+        setNuevoValor('');
+        if (sound) playSound('insert');
+        showToast(`✅ Nuevo nodo (${val}) alojado en dirección Heap [${newAddr}].`);
+      };
+
+      const eliminarNodo = (val) => {
+        const idx = lista.findIndex(n => n.val === val);
+        if (idx === -1) {
+          showToast('❌ Dato no encontrado en la lista.', 'error');
+          return;
+        }
+        let copia = lista.filter((_, i) => i !== idx);
+        if (idx > 0 && idx - 1 < copia.length) {
+          copia[idx - 1].next = idx < lista.length - 1 ? copia[idx].addr : 'NULL';
+        }
+        setLista(copia);
+        if (sound) playSound('delete');
+        showToast(`✅ Nodo ${val} desasignado de la memoria Heap.`);
+      };
+
+      const buscarNodo = () => {
+        const val = parseInt(buscarVal);
+        const idx = lista.findIndex(n => n.val === val);
+        if (idx === -1) {
+          setHighlightIdx(null);
+          showToast(`❌ El valor ${val} NO existe en los nodos enlazados.`, 'warning');
+        } else {
+          setHighlightIdx(idx);
+          if (sound) playSound('click');
+          showToast(`👉 Nodo hallado en dirección Heap ${lista[idx].addr}.`);
+        }
+      };
+
+      return (
+        <div class="space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                <Icon name="git-commit" className="text-cyan-400" />
+                3. Lista Enlazada Dinámica (Memoria Heap)
+              </h2>
+              <p class="text-xs text-slate-400">Nodos no contiguos enlazados mediante punteros de memoria explícitos.</p>
+            </div>
+          </div>
+          <ComplexityBadge 
+            access="O(N)" search="O(N)" insert="O(1)" deleteOp="O(1)"
+            codeSnippet={`# Nodo de Lista Simplemente Enlazada
+class Nodo:
+    def __init__(self, valor):
+        self.valor = valor
+        self.siguiente = None`}
+          />
+          <div class="bg-slate-955 p-8 rounded-3xl border border-slate-800 overflow-x-auto custom-scrollbar">
+            <div class="flex items-center gap-4 min-w-max py-4 font-mono">
+              <div class="bg-indigo-950/80 border border-indigo-500 px-4 py-3 rounded-2xl text-cyan-300 text-xs font-bold shadow-lg shadow-indigo-500/20">
+                <div>HEAD</div>
+                <div class="text-[9px] text-slate-400">{lista.length > 0 ? lista[0].addr : 'NULL'}</div>
+              </div>
+              <Icon name="arrow-right" className="text-cyan-400 w-5 h-5 animate-pulse" />
+              {lista.length === 0 ? (
+                <span class="text-slate-600 text-sm">Lista Vacía (NULL)</span>
+              ) : (
+                lista.map((node, idx) => {
+                  const isSel = highlightIdx === idx;
+                  return (
+                    <React.Fragment key={idx}>
+                      <div class={`node-pop glass-panel rounded-2xl p-4 flex items-center gap-4 border transition-all duration-300 ${
+                        isSel ? 'border-cyan-400 bg-indigo-600/30 scale-105 shadow-2xl shadow-cyan-500/30 pulse-glow' : 'border-slate-800 hover:border-slate-700'
+                      }`}>
+                        <div class="flex flex-col">
+                          <span class="text-[9px] text-cyan-400">ADDR: {node.addr}</span>
+                          <span class="text-xl font-bold text-white">{node.val}</span>
+                        </div>
+                        <div class="h-10 w-px bg-slate-800"></div>
+                        <div class="flex flex-col items-center">
+                          <span class="text-[9px] text-slate-500">NEXT</span>
+                          <span class="text-[10px] text-emerald-400 font-bold">{node.next}</span>
+                        </div>
+                        <button onClick={() => eliminarNodo(node.val)} class="text-slate-500 hover:text-rose-400 transition ml-2">
+                          <Icon name="trash-2" className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <Icon name="arrow-right" className="text-slate-600 w-5 h-5" />
+                    </React.Fragment>
+                  );
+                })
+              )}
+              <div class="bg-slate-900 border border-slate-800 px-4 py-3 rounded-2xl text-slate-500 text-xs font-bold">
+                NULL
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex gap-2 font-mono">
+              <input type="number" placeholder="Nuevo valor" value={nuevoValor} onChange={e=>setNuevoValor(e.target.value)} class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+              <button onClick={insertarNodo} class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold">
+                Insertar Nodo
+              </button>
+            </div>
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex gap-2 font-mono">
+              <input type="number" placeholder="Buscar valor" value={buscarVal} onChange={e=>setBuscarVal(e.target.value)} class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+              <button onClick={buscarNodo} class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">
+                Buscar Nodo
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PilaModulo({ showToast, sound }) {
+      const [pila, setPila] = useState([18, 42, 77]);
+      const [inputVal, setInputVal] = useState('');
+
+      const push = () => {
+        const val = parseInt(inputVal);
+        if (isNaN(val)) {
+          showToast('❌ Ingrese un entero válido.', 'error');
+          return;
+        }
+        setPila([...pila, val]);
+        setInputVal('');
+        if (sound) playSound('push');
+        showToast(`✅ Push: ${val} apilado en la cima.`);
+      };
+
+      const pop = () => {
+        if (pila.length === 0) {
+          showToast('❌ Underflow: Intento de retirado en PILA VACÍA.', 'error');
+          return;
+        }
+        const copia = [...pila];
+        const rem = copia.pop();
+        setPila(copia);
+        if (sound) playSound('pop');
+        showToast(`✅ Pop: Extraído elemento ${rem} de la Cima.`);
+      };
+
+      const peek = () => {
+        if (pila.length === 0) {
+          showToast('❌ La pila está vacía.', 'warning');
+          return;
+        }
+        if (sound) playSound('click');
+        showToast(`👉 Cima actual (Peek): ${pila[pila.length - 1]}`);
+      };
+
+      return (
+        <div class="space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                <Icon name="layers" className="text-cyan-400" />
+                4. Pila Animada (Stack - LIFO)
+              </h2>
+              <p class="text-xs text-slate-400">Last In, First Out (Último en Entrar, Primero en Salir).</p>
+            </div>
+          </div>
+          <ComplexityBadge 
+            access="O(N)" search="O(N)" insert="O(1)" deleteOp="O(1)"
+            codeSnippet={`# Estructura Pila (Stack) LIFO
+pila = []
+pila.append(10)  # Push O(1)
+top = pila[-1]   # Peek O(1)
+elem = pila.pop() # Pop O(1)`}
+          />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div class="bg-slate-955 p-6 rounded-3xl border border-slate-800 flex flex-col items-center min-h-[360px]">
+              <span class="text-xs font-mono font-bold text-cyan-400 mb-4 px-3 py-1 bg-indigo-950/80 rounded-full border border-indigo-700">
+                ▲ CIMA (TOP OF STACK) ▲
+              </span>
+              <div class="w-60 flex flex-col gap-2.5">
+                {pila.length === 0 ? (
+                  <div class="py-20 text-center text-slate-600 font-mono text-sm border border-dashed border-slate-800 rounded-2xl">Pila Vacía</div>
+                ) : (
+                  [...pila].reverse().map((val, idx) => {
+                    const isTop = idx === 0;
+                    return (
+                      <div 
+                        key={idx} 
+                        class={`node-pop p-4 rounded-2xl border font-bold text-center text-lg transition-all font-mono ${
+                          isTop ? 'bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 border-cyan-300 text-white shadow-2xl shadow-indigo-500/50 pulse-glow' : 'bg-slate-900 border-slate-800 text-slate-300'
+                        }`}
+                      >
+                        <div class="flex justify-between items-center px-2">
+                          <span class="text-xs font-mono opacity-70">{isTop ? '[TOP]' : ''}</span>
+                          <span>{val}</span>
+                          <span class="text-xs font-mono opacity-50">Pos {pila.length - 1 - idx}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <span class="text-xs font-mono text-slate-600 mt-auto pt-4 border-t border-slate-800 w-full text-center">BASE DE LA PILA</span>
+            </div>
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 font-mono">
+              <h4 class="text-xs font-semibold text-white">Operaciones LIFO:</h4>
+              <div class="flex gap-2">
+                <input type="number" placeholder="Valor" value={inputVal} onChange={e=>setInputVal(e.target.value)} class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+                <button onClick={push} class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30">Apilar (Push)</button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button onClick={pop} class="bg-rose-950/60 border border-rose-800/80 hover:bg-rose-900 text-rose-200 py-2.5 rounded-xl text-xs font-semibold">Desapilar (Pop)</button>
+                <button onClick={peek} class="bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl text-xs font-semibold">Cima (Peek)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ColaModulo({ showToast, sound }) {
+      const [cola, setCola] = useState([10, 20, 30, 40]);
+      const [inputVal, setInputVal] = useState('');
+
+      const enqueue = () => {
+        const val = parseInt(inputVal);
+        if (isNaN(val)) {
+          showToast('❌ Ingrese un entero válido.', 'error');
+          return;
+        }
+        setCola([...cola, val]);
+        setInputVal('');
+        if (sound) playSound('push');
+        showToast(`✅ Enqueue: Elemento ${val} ingresado al final.`);
+      };
+
+      const dequeue = () => {
+        if (cola.length === 0) {
+          showToast('❌ Underflow: COLA VACÍA.', 'error');
+          return;
+        }
+        const rem = cola[0];
+        setCola(cola.slice(1));
+        if (sound) playSound('pop');
+        showToast(`✅ Dequeue: Elemento ${rem} retirado del frente.`);
+      };
+
+      const peek = () => {
+        if (cola.length === 0) {
+          showToast('❌ Cola vacía.', 'warning');
+          return;
+        }
+        if (sound) playSound('click');
+        showToast(`👉 Frente (Peek): ${cola[0]}`);
+      };
+
+      return (
+        <div class="space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                <Icon name="arrow-right-left" className="text-cyan-400" />
+                5. Cola Animada (Queue - FIFO)
+              </h2>
+              <p class="text-xs text-slate-400">First In, First Out (Primero en Entrar, Primero en Salir).</p>
+            </div>
+          </div>
+          <ComplexityBadge 
+            access="O(N)" search="O(N)" insert="O(1)" deleteOp="O(1)"
+            codeSnippet={`# Estructura Cola FIFO con deque
+from collections import deque
+cola = deque()
+cola.append(10)      # Enqueue O(1)
+frente = cola[0]     # Peek O(1)
+elem = cola.popleft()# Dequeue O(1)`}
+          />
+          <div class="bg-slate-955 p-8 rounded-3xl border border-slate-800 overflow-x-auto custom-scrollbar">
+            <div class="flex items-center gap-4 min-w-max py-4 font-mono">
+              <span class="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-700 px-3.5 py-2 rounded-xl shadow-lg shadow-emerald-500/20">FRENTE (Dequeue)</span>
+              <Icon name="arrow-right" className="text-emerald-400 w-5 h-5 animate-pulse" />
+              {cola.length === 0 ? (
+                <span class="text-slate-600 text-sm px-8">Cola Vacía</span>
+              ) : (
+                cola.map((val, idx) => {
+                  const isFront = idx === 0;
+                  return (
+                    <div 
+                      key={idx} 
+                      class={`node-pop p-4 rounded-2xl border font-bold text-lg text-center min-w-[75px] ${
+                        isFront ? 'bg-gradient-to-tr from-emerald-600 to-teal-500 border-emerald-300 text-white shadow-2xl shadow-emerald-500/30 pulse-glow' : 'bg-slate-900 border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      {val}
+                    </div>
+                  );
+                })
+              )}
+              <Icon name="arrow-right" className="text-cyan-400 w-5 h-5" />
+              <span class="text-xs font-bold text-cyan-400 bg-indigo-950/80 border border-indigo-700 px-3.5 py-2 rounded-xl shadow-lg shadow-indigo-500/20">FINAL (Enqueue)</span>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-4 items-center justify-between font-mono">
+            <div class="flex gap-2 flex-1 min-w-[200px]">
+              <input type="number" placeholder="Valor" value={inputVal} onChange={e=>setInputVal(e.target.value)} class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+              <button onClick={enqueue} class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30">Enqueue</button>
+            </div>
+            <div class="flex gap-2">
+              <button onClick={dequeue} class="bg-rose-950/60 border border-rose-800/80 hover:bg-rose-900 text-rose-200 px-4 py-2 rounded-xl text-xs font-semibold">Dequeue</button>
+              <button onClick={peek} class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Frente (Peek)</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ArbolModulo({ showToast, sound, animSpeed }) {
+      const [treeData, setTreeData] = useState({
+        val: '50',
+        left: {
+          val: '30',
+          left: { val: '20', left: null, right: null },
+          right: { val: '40', left: null, right: null }
+        },
+        right: {
+          val: '70',
+          left: { val: '60', left: null, right: null },
+          right: { val: '80', left: null, right: null }
+        }
+      });
+      const [inputValue, setInputValue] = useState('');
+      const [insertMode, setInsertMode] = useState('auto');
+      const [targetParent, setTargetParent] = useState('');
+      const [valToDelete, setValToDelete] = useState('');
+      const [activeNodeVal, setActiveNodeVal] = useState(null);
+      const [traversalResult, setTraversalResult] = useState([]);
+      const [currentTraversalType, setCurrentTraversalType] = useState('');
+      const [isAnimating, setIsAnimating] = useState(false);
+
+      const getAllValues = (node, list = []) => {
+        if (!node) return list;
+        getAllValues(node.left, list);
+        list.push(String(node.val));
+        getAllValues(node.right, list);
+        return list;
+      };
+
+      const compareVals = (a, b) => {
+        const numA = Number(a);
+        const numB = Number(b);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return String(a).localeCompare(String(b));
+      };
+
+      const insertNodeAuto = (root, value) => {
+        if (!root) return { val: String(value), left: null, right: null };
+        const cmp = compareVals(value, root.val);
+        if (cmp < 0) {
+          return { ...root, left: insertNodeAuto(root.left, value) };
+        } else if (cmp > 0) {
+          return { ...root, right: insertNodeAuto(root.right, value) };
+        }
+        return root;
+      };
+
+      const insertNodeManual = (root, parentVal, newVal, side) => {
+        if (!root) return null;
+        if (String(root.val) === String(parentVal)) {
+          if (side === 'left') {
+            return { ...root, left: { val: String(newVal), left: root.left, right: null } };
+          } else {
+            return { ...root, right: { val: String(newVal), left: null, right: root.right } };
+          }
+        }
+        return {
+          ...root,
+          left: insertNodeManual(root.left, parentVal, newVal, side),
+          right: insertNodeManual(root.right, parentVal, newVal, side)
+        };
+      };
+
+      const findMin = (node) => {
+        while (node.left) node = node.left;
+        return node;
+      };
+
+      const deleteNodeInTree = (root, value) => {
+        if (!root) return null;
+        if (String(root.val) === String(value)) {
+          if (!root.left) return root.right;
+          if (!root.right) return root.left;
+          const temp = findMin(root.right);
+          root.val = temp.val;
+          root.right = deleteNodeInTree(root.right, temp.val);
+          return { ...root };
+        }
+        return {
+          ...root,
+          left: deleteNodeInTree(root.left, value),
+          right: deleteNodeInTree(root.right, value)
+        };
+      };
+
+      const handleInsert = (e) => {
+        if (e) e.preventDefault();
+        const valStr = inputValue.trim();
+        if (!valStr) {
+          showToast('⚠️ Ingresa un número o palabra válida', 'warning');
+          return;
+        }
+        const currentVals = getAllValues(treeData);
+        if (currentVals.includes(valStr)) {
+          showToast(`⚠️ El elemento '${valStr}' ya existe en el árbol`, 'warning');
+          return;
+        }
+        if (insertMode === 'auto') {
+          setTreeData((prevTree) => insertNodeAuto(prevTree, valStr));
+          showToast(`✅ '${valStr}' insertado automáticamente según BST`, 'success');
+        } else {
+          if (!targetParent) {
+            showToast('⚠️ Selecciona un nodo Padre objetivo para ubicar el nuevo nodo', 'warning');
+            return;
+          }
+          setTreeData((prevTree) => insertNodeManual(prevTree, targetParent, valStr, insertMode));
+          showToast(`✅ '${valStr}' insertado a la ${insertMode === 'left' ? 'IZQUIERDA' : 'DERECHA'} de [${targetParent}]`, 'success');
+        }
+        setInputValue('');
+        if (sound) playSound('insert');
+      };
+
+      const handleDeleteValue = (valTarget) => {
+        const targetStr = String(valTarget);
+        if (!targetStr) return;
+        setActiveNodeVal(targetStr);
+        setTimeout(() => {
+          setTreeData((prevTree) => deleteNodeInTree(prevTree, targetStr));
+          setActiveNodeVal(null);
+          setValToDelete('');
+          setTraversalResult([]);
+          if (sound) playSound('delete');
+          showToast(`🗑️ Elemento '${targetStr}' eliminado del árbol`, 'info');
+        }, 200);
+      };
+
+      const handleClearTree = (e) => {
+        if (e) e.preventDefault();
+        setTreeData(null);
+        setTraversalResult([]);
+        if (sound) playSound('delete');
+        showToast('🧹 Árbol vaciado por completo', 'warning');
+      };
+
+      const getInorder = (node, acc = []) => {
+        if (!node) return acc;
+        getInorder(node.left, acc);
+        acc.push(String(node.val));
+        getInorder(node.right, acc);
+        return acc;
+      };
+
+      const getPreorder = (node, acc = []) => {
+        if (!node) return acc;
+        acc.push(String(node.val));
+        getPreorder(node.left, acc);
+        getPreorder(node.right, acc);
+        return acc;
+      };
+
+      const getPostorder = (node, acc = []) => {
+        if (!node) return acc;
+        getPostorder(node.left, acc);
+        getPostorder(node.right, acc);
+        acc.push(String(node.val));
+        return acc;
+      };
+
+      const animateTraversal = (sequence, typeName) => {
+        if (isAnimating || !sequence.length) return;
+        setIsAnimating(true);
+        setCurrentTraversalType(typeName);
+        setTraversalResult([]);
+        let step = 0;
+        const intervalTime = Math.max(250, 700 / animSpeed);
+        const timer = setInterval(() => {
+          if (step < sequence.length) {
+            const currentVal = sequence[step];
+            setActiveNodeVal(currentVal);
+            setTraversalResult((prev) => [...prev, currentVal]);
+            if (sound) playSound('click');
+            step++;
+          } else {
+            clearInterval(timer);
+            setActiveNodeVal(null);
+            setIsAnimating(false);
+            if (sound) playSound('success');
+            showToast(`✨ Recorrido ${typeName} completado`, 'info');
+          }
+        }, intervalTime);
+      };
+
+      const renderTreeGraph = (node) => {
+        if (!node) return null;
+        const nodeStr = String(node.val);
+        const isActive = String(activeNodeVal) === nodeStr;
+        return (
+          <div class="flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => handleDeleteValue(nodeStr)}
+              title={`Haz clic para eliminar [${nodeStr}]`}
+              class={`min-w-[48px] h-12 px-3 rounded-full flex items-center justify-center font-mono font-extrabold text-xs border-2 transition-all duration-300 shadow-lg cursor-pointer group hover:scale-110 ${
+                isActive
+                  ? 'bg-amber-400 border-amber-200 text-black scale-125 shadow-amber-400/80 ring-4 ring-amber-400/40 animate-pulse'
+                  : 'bg-gradient-to-b from-indigo-600 to-blue-800 border-cyan-400 text-white shadow-cyan-500/30 hover:border-rose-400 hover:from-rose-600 hover:to-rose-800'
+              }`}
+            >
+              <span class="group-hover:hidden truncate max-w-[80px]">{nodeStr}</span>
+              <span class="hidden group-hover:inline text-xs font-bold">✕</span>
+            </button>
+            {(node.left || node.right) && (
+              <div class="flex gap-8 pt-6 relative">
+                {node.left ? (
+                  <div class="flex flex-col items-center relative">
+                    <div class="absolute -top-6 right-1/2 w-1/2 h-6 border-t-2 border-l-2 border-cyan-500/40 rounded-tl-lg"></div>
+                    {renderTreeGraph(node.left)}
+                  </div>
+                ) : (
+                  <div class="w-8"></div>
+                )}
+                {node.right ? (
+                  <div class="flex flex-col items-center relative">
+                    <div class="absolute -top-6 left-1/2 w-1/2 h-6 border-t-2 border-r-2 border-cyan-500/40 rounded-tr-lg"></div>
+                    {renderTreeGraph(node.right)}
+                  </div>
+                ) : (
+                  <div class="w-8"></div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const allNodesList = getAllValues(treeData);
+      return (
+        <div class="glass-panel p-6 md:p-8 rounded-3xl border border-indigo-500/30 space-y-6 page-enter">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                <h3 class="text-xl font-black text-cyan-300">6. Árbol Binario (Soporta Texto & Números)</h3>
+              </div>
+              <p class="text-xs text-slate-400 font-mono mt-1">
+                Acepta palabras o valores numéricos • Inserción automática BST o asignación manual (Izquierda / Derecha)
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold rounded-full">
+                Total Nodos: {allNodesList.length}
+              </span>
+            </div>
+          </div>
+          <div class="bg-[#050814] rounded-2xl border border-slate-800/80 p-8 min-h-[300px] flex items-center justify-center overflow-x-auto custom-scrollbar relative">
+            {treeData ? (
+              renderTreeGraph(treeData)
+            ) : (
+              <div class="text-center font-mono text-xs text-slate-500 py-10 space-y-2">
+                <p>[ El Árbol está vacío ]</p>
+                <p class="text-[10px] text-slate-600">Inserta nuevos valores o palabras para construirlo</p>
+              </div>
+            )}
+          </div>
+          <form onSubmit={handleInsert} class="bg-[#070b18] p-4 rounded-2xl border border-slate-800 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ingresa un valor o palabra..."
+                class="sm:col-span-5 bg-[#0a0f24] border border-cyan-500/30 focus:border-cyan-400 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none font-mono"
+              />
+              <select
+                value={insertMode}
+                onChange={(e) => setInsertMode(e.target.value)}
+                class="sm:col-span-4 bg-[#0a0f24] border border-cyan-500/30 text-cyan-300 rounded-xl px-3 py-2.5 text-xs font-mono focus:outline-none"
+              >
+                <option value="auto">⚡ Inserción Automática (BST)</option>
+                <option value="left">👈 Insertar a la IZQUIERDA de Padre</option>
+                <option value="right">👉 Insertar a la DERECHA de Padre</option>
+              </select>
+              {insertMode !== 'auto' && (
+                <select
+                  value={targetParent}
+                  onChange={(e) => setTargetParent(e.target.value)}
+                  class="sm:col-span-3 bg-[#0a0f24] border border-amber-500/40 text-amber-300 rounded-xl px-3 py-2.5 text-xs font-mono focus:outline-none"
+                >
+                  <option value="">-- Nodo Padre --</option>
+                  {allNodesList.map((val) => (
+                    <option key={val} value={val}>
+                      Padre: [{val}]
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                type="submit"
+                disabled={isAnimating}
+                class={`py-2.5 px-4 font-mono font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                  insertMode !== 'auto' ? 'sm:col-span-12 bg-amber-500 hover:bg-amber-400 text-black' : 'sm:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white'
+                }`}
+              >
+                <Icon name="plus" className="w-4 h-4" /> Insertar Nodo
+              </button>
+            </div>
+          </form>
+          <div class="flex gap-2 bg-[#070b18] p-3 rounded-2xl border border-rose-500/20">
+            <select
+              value={valToDelete}
+              onChange={(e) => setValToDelete(e.target.value)}
+              class="flex-1 bg-[#0a0f24] border border-rose-500/30 text-rose-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none"
+            >
+              <option value="">-- Elige nodo/palabra a eliminar --</option>
+              {allNodesList.map((val) => (
+                <option key={val} value={val}>
+                  Nodo [{val}]
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={isAnimating || !valToDelete}
+              onClick={() => handleDeleteValue(valToDelete)}
+              class="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-mono font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition active:scale-95"
+            >
+              <Icon name="trash-2" className="w-4 h-4" /> Eliminar
+            </button>
+            <button
+              type="button"
+              onClick={handleClearTree}
+              class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-mono font-bold text-xs rounded-xl transition"
+            >
+              Vaciar
+            </button>
+          </div>
+          <div class="space-y-3 pt-2 border-t border-slate-800">
+            <span class="text-xs font-mono text-slate-400 font-bold block">
+              Algoritmos de Recorrido Animados:
+            </span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                type="button"
+                disabled={isAnimating || !treeData}
+                onClick={() => animateTraversal(getInorder(treeData), 'Inorden (Izq - Raíz - Der)')}
+                class="py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 disabled:opacity-50 text-white font-mono font-bold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Icon name="arrow-right-left" className="w-4 h-4" /> Recorrido Inorden
+              </button>
+              <button
+                type="button"
+                disabled={isAnimating || !treeData}
+                onClick={() => animateTraversal(getPreorder(treeData), 'Preorden (Raíz - Izq - Der)')}
+                class="py-3 px-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90 disabled:opacity-50 text-white font-mono font-bold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Icon name="arrow-up-right" className="w-4 h-4" /> Recorrido Preorden
+              </button>
+              <button
+                type="button"
+                disabled={isAnimating || !treeData}
+                onClick={() => animateTraversal(getPostorder(treeData), 'Postorden (Izq - Der - Raíz)')}
+                class="py-3 px-4 bg-gradient-to-r from-cyan-600 to-teal-600 hover:opacity-90 disabled:opacity-50 text-white font-mono font-bold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Icon name="arrow-down-right" className="w-4 h-4" /> Recorrido Postorden
+              </button>
+            </div>
+          </div>
+          {traversalResult.length > 0 && (
+            <div class="bg-[#070c1e] p-4 rounded-xl border border-cyan-500/30 space-y-2">
+              <div class="flex items-center justify-between text-xs font-mono">
+                <span class="text-cyan-300 font-bold">Secuencia {currentTraversalType}:</span>
+                <span class="text-slate-400">{traversalResult.length} nodos visitados</span>
+              </div>
+              <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar py-1">
+                {traversalResult.map((val, idx) => (
+                  <React.Fragment key={idx}>
+                    <span class="px-3 py-1.5 bg-indigo-950 border border-indigo-400/50 text-cyan-200 font-mono font-bold text-xs rounded-lg shadow-md node-pop">
+                      {val}
+                    </span>
+                    {idx < traversalResult.length - 1 && (
+                      <span class="text-slate-500 font-mono font-bold">→</span>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- GRAFO NO DIRIGIDO CON POSICIONAMIENTO COMPLETAMENTE CENTRADO ---
+    function GrafoModulo({ showToast, sound, animSpeed }) {
+      const [nodes, setNodes] = useState([
+        { id: 'A' },
+        { id: 'B' },
+        { id: 'C' },
+        { id: 'D' },
+        { id: 'E' }
+      ]);
+      const [edges, setEdges] = useState([
+        { from: 'A', to: 'B' },
+        { from: 'B', to: 'C' },
+        { from: 'C', to: 'D' },
+        { from: 'D', to: 'E' },
+        { from: 'E', to: 'A' }
+      ]);
+      const [nuevoVertice, setNuevoVertice] = useState('');
+      const [origA, setOrigA] = useState('');
+      const [destA, setDestA] = useState('');
+      const [verticeToDelete, setVerticeToDelete] = useState('');
+      
+      const [activeNode, setActiveNode] = useState(null);
+      const [visitedNodes, setVisitedNodes] = useState([]);
+      const [isAnimating, setIsAnimating] = useState(false);
+
+      const containerRef = useRef(null);
+      const [dimensions, setDimensions] = useState({ width: 600, height: 320 });
+
+      // Ajustar dimensiones del contenedor dinámicamente
+      useEffect(() => {
+        const updateSize = () => {
+          if (containerRef.current) {
+            setDimensions({
+              width: containerRef.current.clientWidth || 600,
+              height: containerRef.current.clientHeight || 320
+            });
+          }
+        };
+        updateSize();
+        window.addEventListener('resize', updateSize);
+        return () => window.removeEventListener('resize', updateSize);
+      }, []);
+
+      // CÁLCULO POLAR MATEMÁTICO PERFECTAMENTE CENTRADO
+      const getCalculatedPositions = () => {
+        const total = nodes.length;
+        if (total === 0) return {};
+        const centerX = dimensions.width / 2;
+        const centerY = dimensions.height / 2;
+        // Radio dinámico adaptado al alto y ancho del contenedor
+        const radius = Math.min(centerX, centerY) - 55;
+
+        const posMap = {};
+        nodes.forEach((n, idx) => {
+          // Ángulo uniforme con desfase para iniciar arriba centrado
+          const angle = (idx * 2 * Math.PI) / total - Math.PI / 2;
+          posMap[String(n.id)] = {
+            x: centerX + radius * Math.cos(angle),
+            y: centerY + radius * Math.sin(angle)
+          };
+        });
+        return posMap;
+      };
+
+      const computedPos = getCalculatedPositions();
+
+      const agregarVertice = (e) => {
+        if (e) e.preventDefault();
+        const idTrim = nuevoVertice.trim();
+        if (!idTrim) {
+          showToast('⚠️ Ingresa un valor o palabra válida para el vértice', 'warning');
+          return;
+        }
+        if (nodes.some(n => String(n.id) === idTrim)) {
+          showToast(`⚠️ El vértice '${idTrim}' ya existe en el grafo`, 'warning');
+          return;
+        }
+        setNodes([...nodes, { id: idTrim }]);
+        setNuevoVertice('');
+        if (sound) playSound('insert');
+        showToast(`✅ Vértice '${idTrim}' agregado al grafo`, 'success');
+      };
+
+      const conectarArista = (e) => {
+        if (e) e.preventDefault();
+        const o = origA.trim();
+        const d = destA.trim();
+        if (!o || !d) {
+          showToast('⚠️ Selecciona Origen y Destino para conectar', 'warning');
+          return;
+        }
+        if (o === d) {
+          showToast('⚠️ No se permiten bucles al mismo vértice', 'warning');
+          return;
+        }
+        const existeOrigen = nodes.some(n => String(n.id) === o);
+        const existeDestino = nodes.some(n => String(n.id) === d);
+        if (!existeOrigen || !existeDestino) {
+          showToast('❌ Uno o ambos vértices no existen', 'error');
+          return;
+        }
+        const yaConectados = edges.some(
+          e => (String(e.from) === o && String(e.to) === d) || (String(e.from) === d && String(e.to) === o)
+        );
+        if (yaConectados) {
+          showToast('⚠️ Esa conexión ya existe', 'warning');
+          return;
+        }
+        setEdges([...edges, { from: o, to: d }]);
+        setOrigA('');
+        setDestA('');
+        if (sound) playSound('click');
+        showToast(`🔗 Arista creada entre '${o}' y '${d}'`, 'success');
+      };
+
+      const eliminarVertice = (idTarget) => {
+        const targetStr = String(idTarget).trim();
+        if (!targetStr) return;
+        setNodes(prev => prev.filter(n => String(n.id) !== targetStr));
+        setEdges(prev => prev.filter(e => String(e.from) !== targetStr && String(e.to) !== targetStr));
+        setVerticeToDelete('');
+        setVisitedNodes([]);
+        if (sound) playSound('delete');
+        showToast(`🗑️ Vértice '${targetStr}' y sus conexiones eliminados`, 'info');
+      };
+
+      const simularBFS = () => {
+        if (nodes.length === 0 || isAnimating) return;
+        setIsAnimating(true);
+        setVisitedNodes([]);
+        const startNode = nodes[0].id;
+        const queue = [startNode];
+        const visitedSet = new Set([startNode]);
+        const order = [];
+        const adj = {};
+        nodes.forEach(n => adj[n.id] = []);
+        edges.forEach(e => {
+          if (adj[e.from]) adj[e.from].push(e.to);
+          if (adj[e.to]) adj[e.to].push(e.from);
+        });
+        while (queue.length > 0) {
+          const curr = queue.shift();
+          order.push(curr);
+          const neighbors = adj[curr] || [];
+          for (let neighbor of neighbors) {
+            if (!visitedSet.has(neighbor)) {
+              visitedSet.add(neighbor);
+              queue.push(neighbor);
+            }
+          }
+        }
+        let step = 0;
+        const intervalTime = Math.max(300, 800 / animSpeed);
+        const timer = setInterval(() => {
+          if (step < order.length) {
+            const currId = order[step];
+            setActiveNode(currId);
+            setVisitedNodes(prev => [...prev, currId]);
+            if (sound) playSound('click');
+            step++;
+          } else {
+            clearInterval(timer);
+            setActiveNode(null);
+            setIsAnimating(false);
+            if (sound) playSound('success');
+            showToast(`✨ Búsqueda BFS completada: [ ${order.join(' → ')} ]`, 'info');
+          }
+        }, intervalTime);
+      };
+
+      const vaciarGrafo = () => {
+        setNodes([]);
+        setEdges([]);
+        setVisitedNodes([]);
+        if (sound) playSound('delete');
+        showToast('🧹 Grafo vaciado por completo', 'warning');
+      };
+
+      return (
+        <div class="glass-panel p-6 md:p-8 rounded-3xl border border-emerald-500/30 space-y-6 page-enter">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <h3 class="text-xl font-black text-emerald-300">7. Grafo No Dirigido (Vértices Centrados)</h3>
+              </div>
+              <p class="text-xs text-slate-400 font-mono mt-1">
+                Visualización simétrica y balanceada en el canvas • Propagación de ondas BFS
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold rounded-full">
+                Vértices: {nodes.length} | Aristas: {edges.length}
+              </span>
+            </div>
+          </div>
+          
+          {/* LIENZO DE CANVAS CENTRADO */}
+          <div ref={containerRef} class="relative bg-[#050814] rounded-2xl border border-slate-800 h-[340px] w-full flex items-center justify-center overflow-hidden">
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-0">
+              {edges.map((edge, idx) => {
+                const p1 = computedPos[String(edge.from)];
+                const p2 = computedPos[String(edge.to)];
+                if (!p1 || !p2) return null;
+                const isVisited = visitedNodes.map(String).includes(String(edge.from)) && visitedNodes.map(String).includes(String(edge.to));
+                return (
+                  <line
+                    key={idx}
+                    x1={p1.x}
+                    y1={p1.y}
+                    x2={p2.x}
+                    y2={p2.y}
+                    stroke={isVisited ? '#00f2fe' : '#1e293b'}
+                    strokeWidth={isVisited ? '3' : '2'}
+                    strokeDasharray={isVisited ? 'none' : '4'}
+                    class="transition-all duration-500"
+                  />
+                );
+              })}
+            </svg>
+            
+            {nodes.length === 0 ? (
+              <div class="text-center font-mono text-xs text-slate-500 py-10 space-y-2 relative z-10">
+                <p>[ El Grafo está vacío ]</p>
+                <p class="text-[10px] text-slate-600">Agrega un vértice o número abajo para construir la red</p>
+              </div>
+            ) : (
+              <div class="absolute inset-0 w-full h-full pointer-events-none z-10">
+                {nodes.map((node) => {
+                  const nodeStr = String(node.id);
+                  const pos = computedPos[nodeStr];
+                  if (!pos) return null;
+                  const isActive = String(activeNode) === nodeStr;
+                  const isVisited = visitedNodes.map(String).includes(nodeStr);
+                  
+                  return (
+                    <button
+                      key={nodeStr}
+                      type="button"
+                      onClick={() => eliminarVertice(nodeStr)}
+                      title={`Haz clic para eliminar el vértice '${nodeStr}'`}
+                      style={{ 
+                        left: `${pos.x}px`, 
+                        top: `${pos.y}px`, 
+                        transform: 'translate(-50%, -50%)' 
+                      }}
+                      class={`absolute min-w-[50px] h-12 px-3 rounded-full border-2 flex items-center justify-center font-mono font-black text-xs transition-all duration-300 shadow-xl cursor-pointer pointer-events-auto group hover:scale-115 ${
+                        isActive
+                          ? 'bg-amber-400 border-amber-200 text-black scale-125 shadow-amber-400/80 ring-4 ring-amber-400/40 animate-pulse z-30'
+                          : isVisited
+                          ? 'bg-gradient-to-tr from-emerald-600 to-cyan-500 border-cyan-300 text-black scale-105 shadow-cyan-500/50 z-20'
+                          : 'bg-[#0b1021] border-cyan-400/60 text-cyan-200 hover:border-rose-400 hover:bg-rose-950 z-10'
+                      }`}
+                    >
+                      <span class="group-hover:hidden truncate max-w-[70px]">{nodeStr}</span>
+                      <span class="hidden group-hover:inline text-xs font-bold text-rose-300">✕</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            
+            <button
+              type="button"
+              disabled={isAnimating || nodes.length === 0}
+              onClick={simularBFS}
+              class="absolute bottom-4 right-4 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/30 flex items-center gap-2 transition active:scale-95 z-30"
+            >
+              <Icon name="play" className="w-4 h-4" /> Simular BFS
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={agregarVertice} class="bg-[#070b18] p-4 rounded-2xl border border-slate-800 space-y-2">
+              <span class="text-xs font-mono font-bold text-slate-300 block">Agregar Vértice:</span>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  value={nuevoVertice}
+                  onChange={(e) => setNuevoVertice(e.target.value)}
+                  placeholder="Ej: Cartagena, 10, B..."
+                  class="flex-1 bg-[#0a0f24] border border-emerald-500/30 focus:border-emerald-400 rounded-xl px-3 py-2 text-white text-xs focus:outline-none font-mono"
+                />
+                <button
+                  type="submit"
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-mono font-bold text-xs rounded-xl shadow-lg transition active:scale-95"
+                >
+                  Crear
+                </button>
+              </div>
+            </form>
+            <form onSubmit={conectarArista} class="bg-[#070b18] p-4 rounded-2xl border border-slate-800 space-y-2">
+              <span class="text-xs font-mono font-bold text-slate-300 block">Conectar Arista:</span>
+              <div class="grid grid-cols-12 gap-2">
+                <select
+                  value={origA}
+                  onChange={(e) => setOrigA(e.target.value)}
+                  class="col-span-5 bg-[#0a0f24] border border-cyan-500/30 text-cyan-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none"
+                >
+                  <option value="">Origen</option>
+                  {nodes.map(n => <option key={n.id} value={n.id}>{n.id}</option>)}
+                </select>
+                <select
+                  value={destA}
+                  onChange={(e) => setDestA(e.target.value)}
+                  class="col-span-5 bg-[#0a0f24] border border-cyan-500/30 text-cyan-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none"
+                >
+                  <option value="">Destino</option>
+                  {nodes.map(n => <option key={n.id} value={n.id}>{n.id}</option>)}
+                </select>
+                <button
+                  type="submit"
+                  class="col-span-2 bg-cyan-600 hover:bg-cyan-500 text-black font-mono font-bold text-xs rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center"
+                >
+                  <Icon name="link" className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+            <select
+              value={verticeToDelete}
+              onChange={(e) => setVerticeToDelete(e.target.value)}
+              class="flex-1 min-w-[180px] bg-[#070b18] border border-rose-500/30 text-rose-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none"
+            >
+              <option value="">-- Selecciona Vértice a Eliminar --</option>
+              {nodes.map(n => (
+                <option key={n.id} value={n.id}>
+                  Vértice [{n.id}]
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!verticeToDelete}
+              onClick={() => eliminarVertice(verticeToDelete)}
+              class="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-mono font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition active:scale-95"
+            >
+              <Icon name="trash-2" className="w-4 h-4" /> Eliminar Vértice
+            </button>
+            <button
+              type="button"
+              onClick={vaciarGrafo}
+              class="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-mono font-bold text-xs rounded-xl transition ml-auto"
+            >
+              Vaciar Grafo
+            </button>
+          </div>
+          {visitedNodes.length > 0 && (
+            <div class="bg-[#070c1e] p-4 rounded-xl border border-emerald-500/30 space-y-2">
+              <div class="flex items-center justify-between text-xs font-mono">
+                <span class="text-emerald-300 font-bold">Secuencia BFS (Anchura):</span>
+                <span class="text-slate-400">{visitedNodes.length} vértices recorridos</span>
+              </div>
+              <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar py-1">
+                {visitedNodes.map((id, idx) => (
+                  <React.Fragment key={idx}>
+                    <span class="px-3 py-1.5 bg-emerald-950 border border-emerald-400/50 text-emerald-200 font-mono font-bold text-xs rounded-lg shadow-md node-pop">
+                      {id}
+                    </span>
+                    {idx < visitedNodes.length - 1 && (
+                      <span class="text-slate-500 font-mono font-bold">→</span>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
